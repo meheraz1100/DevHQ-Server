@@ -1,0 +1,214 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ADMIN
+  USER
+}
+
+enum TeamRole {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
+model User {
+  id       String @id @default(cuid())
+  name     String
+  username String @unique
+  email    String @unique
+  password String
+
+  avatar String?
+  bio    String?
+
+  role UserRole @default(USER)
+
+  isActive   Boolean @default(true)
+  isVerified Boolean @default(false)
+
+  teams           Team[]           @relation("TeamOwner")
+  memberships     TeamMember[]
+  sentInvitations TeamInvitation[] @relation("UserInvitations")
+  projects Project[] @relation("ProjectCreator")
+  assignedTasks Task[] @relation("TaskAssignee")
+
+  reportedTasks Task[] @relation("TaskReporter")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([email])
+  @@index([username])
+}
+
+model Team {
+  id String @id @default(cuid())
+
+  name        String
+  slug        String  @unique
+  description String?
+
+  ownerId String
+  owner   User   @relation("TeamOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+
+  members     TeamMember[]
+  invitations TeamInvitation[]
+  projects Project[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([ownerId])
+}
+
+model TeamMember {
+  id String @id @default(cuid())
+
+  teamId String
+  userId String
+
+  role TeamRole @default(MEMBER)
+
+  team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([teamId, userId])
+  @@index([teamId])
+  @@index([userId])
+}
+
+
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+model TaskColumn {
+  id String @id @default(cuid())
+
+  name String
+
+  position Int
+
+  color String?
+
+  projectId String
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  tasks Task[]
+
+  createdAt DateTime @default(now())
+
+  updatedAt DateTime @updatedAt
+
+  @@index([projectId])
+
+  @@unique([projectId, position])
+}
+
+model Task {
+  id String @id @default(cuid())
+
+  title String
+
+  description String?
+
+  columnId String
+
+  column TaskColumn @relation(fields: [columnId], references: [id], onDelete: Cascade)
+
+  priority TaskPriority @default(MEDIUM)
+
+  dueDate DateTime?
+  order Int @default(0)
+
+  projectId String
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  assigneeId String?
+  assignee User? @relation("TaskAssignee", fields: [assigneeId], references: [id])
+
+  reporterId String
+  reporter User @relation("TaskReporter", fields: [reporterId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([projectId])
+  @@index([assigneeId])
+  @@index([reporterId])
+  @@index([columnId])
+  @@index([columnId, order])
+
+  @@unique([columnId, order])
+}
+
+model TeamInvitation {
+  id String @id @default(cuid())
+
+  email String @db.VarChar(255)
+  token String @unique @db.VarChar(255)
+
+  teamId      String
+  invitedById String
+
+  role TeamRole @default(MEMBER)
+
+  expiresAt DateTime
+  accepted  Boolean  @default(false)
+
+  team      Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  invitedBy User @relation("UserInvitations", fields: [invitedById], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([email])
+  @@index([teamId])
+}
+
+enum ProjectStatus {
+  PLANNING
+  ACTIVE
+  COMPLETED
+  ARCHIVED
+}
+
+model Project {
+  id          String @id @default(cuid())
+
+  name        String
+  slug        String @unique
+
+  description String?
+
+  status      ProjectStatus @default(PLANNING)
+
+  color       String?
+
+  teamId      String
+  team        Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  tasks Task[]
+  columns TaskColumn[]
+
+  createdById String
+  createdBy   User @relation("ProjectCreator", fields: [createdById], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([teamId])
+  @@index([createdById])
+}
