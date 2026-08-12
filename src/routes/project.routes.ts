@@ -9,8 +9,8 @@ import { updateProjectSchema } from '../modules/project/validators/update-projec
 import taskRoutes from '../modules/task/routes/task.routes';
 import { TaskController } from '../modules/task/controllers/task.controller';
 import { moveTaskSchema } from '../modules/task/validators/move-task.validator';
-import boardRoutes from '../../src/modules/board/routes/board.routes';
-import taskColumnRoutes from '../../src/modules/task-column/routes/task-column.routes';
+import boardRoutes from '../modules/board/routes/board.routes';
+import taskColumnRoutes from '../modules/task-column/routes/task-column.routes';
 
 const router = Router();
 router.use('/:projectId/tasks', taskRoutes);
