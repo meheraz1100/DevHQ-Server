@@ -12,7 +12,11 @@ dotenv.config();
 
 const app = express();
 
-const allowedOrigins = ['http://localhost:3000', 'https://dev-hq.vercel.app'];
+const allowedOrigins = [
+  'http://localhost:3000',
+  'https://dev-hq.vercel.app',
+  'http://192.168.31.136:3000/',
+];
 
 app.use(
   cors({
